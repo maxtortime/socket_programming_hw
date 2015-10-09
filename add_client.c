@@ -14,9 +14,10 @@ int main(int argc, char **argv)
     int client_len;
     int client_sockfd;
 
-    FILE *fp_in;
     char buf_in[255];
     char buf_get[255];
+    char name[20];
+    char greeting[50] = "Hello. This is ";
 
     struct sockaddr_in clientaddr;
 
@@ -26,7 +27,6 @@ int main(int argc, char **argv)
         printf("Example    : ./add_client 4444\n");
         exit(0);
     }
-
 
     client_sockfd = socket(AF_INET, SOCK_STREAM, 0);
     clientaddr.sin_family = AF_INET;
@@ -40,26 +40,33 @@ int main(int argc, char **argv)
         perror("Connect error: ");
         exit(0);
     }
+    // Greeting
+    printf("Please input your name. (length:~20)> ");
+    scanf("%s", &name);
+
+    strcat(greeting, name);
+
+    write(client_sockfd, greeting, 50);
+    read(client_sockfd, buf_get, 255);
+    printf("%s\n", buf_get);
+    
     while(1)
     {
-        printf(">: ");
-        fgets(buf_in, 255,stdin);
+        printf("%s> ",name);
+        scanf("%s",&buf_in);
 
-        buf_in[strlen(buf_in) - 1] = '0';
+        //buf_in[strlen(buf_in) - 1] = '0';
         write(client_sockfd, buf_in, 255);
+        read(client_sockfd, buf_get, 255);
+
         if (strncmp(buf_in, "quit", 4) == 0)
         {
+            printf("%s\n", buf_get);
             close(client_sockfd);
             exit(0);
         }
-        while(1)
-        {
-            read(client_sockfd, buf_get, 255);
-            if (strncmp(buf_get, "end", 3) == 0)
-                break;
-
-            printf("%s", buf_get);
-        }
+       
+        printf("%s\n", buf_get);
     }
 
     close(client_sockfd);

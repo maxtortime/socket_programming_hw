@@ -13,11 +13,12 @@ int main(int argc, char **argv)
     int server_sockfd, client_sockfd;
     int state, client_len;
     int pid;
+    int greeted = 0;
 
     struct sockaddr_in clientaddr, serveraddr;
 
-    char buf[255];
-    char line[255];
+    char buf_in[255];
+    char buf_out[255];
 
     if (argc != 2)
     {
@@ -25,19 +26,8 @@ int main(int argc, char **argv)
         printf("Example  : ./add_server 8080\n");
         exit(0);
     }
-
-    memset(line, '0', 255);
+  
     state = 0;
-
-    // 주소 파일을 읽어들인다.
-    /*
-      client_len = sizeof(clientaddr);
-    if((fp = fopen("zipcode.txt", "r")) == NULL)
-    {
-        perror("file open error : ");
-        exit(0);
-    }
-    */
 
     // internet 기반의 소켓 생성 (INET)
     if ((server_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -54,10 +44,10 @@ int main(int argc, char **argv)
             sizeof(serveraddr));
 
     if (state == -1)
-    		{
+    {
         perror("bind error : ");
         exit(0);
-  	  	}
+    }
 
     state = listen(server_sockfd, 5);
     if (state == -1)
@@ -65,44 +55,57 @@ int main(int argc, char **argv)
         perror("listen error : ");
         exit(0);
     }
+    // Server 
+    printf("Now, We are just listening %s ports (Ctrl+c will stop server)...\n",argv[1]);
 
     while(1)
     {
         client_sockfd = accept(server_sockfd, (struct sockaddr *)&clientaddr,
                                &client_len);
+
         if (client_sockfd == -1)
         {
             perror("Accept error : ");
             exit(0);
         }
+
         while(1)
         {
-            // rewind(fp);
-            memset(buf, '0', 255);
-            if (read(client_sockfd, buf, 255) <= 0)
+            memset(buf_in, '0', 255);
+            memset(buf_out, '0', 255);
+            
+            if (read(client_sockfd, buf_in, 255) <= 0)
             {
                 close(client_sockfd);
                 break;
             }
 
-            if (strncmp(buf, "quit",4) == 0)
-            {
-                write(client_sockfd, "bye bye", 8);
-                close(client_sockfd);
-                break;
+            // greeting
+            read(client_sockfd, buf_in, 255);
+
+            if (strncmp(buf_in, "Hello", 5) == 0) {
+                    greeted = 1;
+                    strncpy(buf_out, "200 Welcome name. What can I do for you?",255);
+                    write(client_sockfd, buf_out, 255);
+            }
+            else {
+                strncpy(buf_out, "400 I'm sorry. Greeting is required.",255);
+                write(client_sockfd,buf_out, 255);
             }
 
-            /*
-            while(fgets(line,255,fp) != NULL)
+            // if client types 'quit'
+            if (strncmp(buf_in, "quit",4) == 0)
             {
-                if (strstr(line, buf) != NULL)
-                {
-                    write(client_sockfd, line, 255);
-                }
-                memset(line, '0', 255);
-            }*/
-            write(client_sockfd, "end", 255);
-            printf("Send End\n");
+                strncpy(buf_out, "200 bye",255);
+                printf("Client is disconnected.\n");
+
+                close(client_sockfd);
+                exit(0);
+            }
+
+            printf("%s\n",buf_in); // print client's input
+            write(client_sockfd, buf_out, 255);
+            //printf("Send End\n");
         }
     }
     close(client_sockfd);
