@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     char buf_in[255];
     char buf_get[255];
     char name[20];
-    char greeting[50] = "Hello. This is ";
+    char greeting[50] = "Hello This is ";
 
     struct sockaddr_in clientaddr;
 
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     write(client_sockfd, greeting, 50);
     read(client_sockfd, buf_get, 255);
     printf("%s\n", buf_get);
-    
+
     while(1)
     {
         printf("%s> ",name);

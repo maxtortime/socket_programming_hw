@@ -19,6 +19,8 @@ int main(int argc, char **argv)
 
     char buf_in[255];
     char buf_out[255];
+    char* name;
+    
 
     if (argc != 2)
     {
@@ -69,10 +71,29 @@ int main(int argc, char **argv)
             exit(0);
         }
 
+        // greeting
+        read(client_sockfd, buf_in, 255);
+        printf("%s\n",buf_in);
+
+        if (strncmp(buf_in, "Hello This is", 13) == 0) {
+                greeted = 1;
+                name = buf_in+14;
+                
+                strncpy(buf_out, "200 Welcome ",13);
+                strncat(buf_out, name,241);
+                strncat(buf_out,". What can I do for you?",25);
+
+                write(client_sockfd, buf_out, 255);
+        }
+        else {
+            strncpy(buf_out, "400 I'm sorry. Greeting is required.",255);
+            write(client_sockfd,buf_out, 255);
+        }
+
         while(1)
         {
-            memset(buf_in, '0', 255);
-            memset(buf_out, '0', 255);
+            memset(buf_in, '\0', 255);
+            memset(buf_out, '\0', 255);
             
             if (read(client_sockfd, buf_in, 255) <= 0)
             {
@@ -80,28 +101,18 @@ int main(int argc, char **argv)
                 break;
             }
 
-            // greeting
-            read(client_sockfd, buf_in, 255);
-
-            if (strncmp(buf_in, "Hello", 5) == 0) {
-                    greeted = 1;
-                    strncpy(buf_out, "200 Welcome name. What can I do for you?",255);
-                    write(client_sockfd, buf_out, 255);
-            }
-            else {
-                strncpy(buf_out, "400 I'm sorry. Greeting is required.",255);
-                write(client_sockfd,buf_out, 255);
-            }
-
             // if client types 'quit'
             if (strncmp(buf_in, "quit",4) == 0)
             {
                 strncpy(buf_out, "200 bye",255);
                 printf("Client is disconnected.\n");
+                write(client_sockfd, buf_out, 255);
 
                 close(client_sockfd);
                 exit(0);
             }
+
+            strncpy(buf_out,"200 ok",6);
 
             printf("%s\n",buf_in); // print client's input
             write(client_sockfd, buf_out, 255);
