@@ -7,19 +7,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
+
+void to_upp(char* stra);
 
 int main(int argc, char **argv)
 {
+    const int BUF_SIZE = 255, GREETING_SIZE = 50, TRANS_SIZE = 20;
     int server_sockfd, client_sockfd;
     int state, client_len;
     int pid;
+    int i = 0;
     int greeted = 0;
 
     struct sockaddr_in clientaddr, serveraddr;
 
-    char buf_in[255];
-    char buf_out[255];
+    char buf_in[BUF_SIZE];
+    char buf_out[BUF_SIZE];
     char* name;
+    char* tk;
+    char * order;
+    char* transaction[TRANS_SIZE];
+    // left value and right value when calculation.
+    long lv = 0;
+    long rv = 0; 
+    char* lptr = NULL;
+    char* rptr = NULL;
     
 
     if (argc != 2)
@@ -71,53 +84,100 @@ int main(int argc, char **argv)
             exit(0);
         }
 
-        // greeting
-        read(client_sockfd, buf_in, 255);
-        printf("%s\n",buf_in);
-
-        if (strncmp(buf_in, "Hello This is", 13) == 0) {
-                greeted = 1;
-                name = buf_in+14;
-                
-                strncpy(buf_out, "200 Welcome ",13);
-                strncat(buf_out, name,241);
-                strncat(buf_out,". What can I do for you?",25);
-
-                write(client_sockfd, buf_out, 255);
-        }
-        else {
-            strncpy(buf_out, "400 I'm sorry. Greeting is required.",255);
-            write(client_sockfd,buf_out, 255);
-        }
-
         while(1)
         {
-            memset(buf_in, '\0', 255);
-            memset(buf_out, '\0', 255);
+            i = 0;
+            memset(buf_in, '\0', BUF_SIZE);
+            memset(buf_out, '\0', BUF_SIZE);
             
-            if (read(client_sockfd, buf_in, 255) <= 0)
+            if (read(client_sockfd, buf_in, BUF_SIZE) <= 0)
             {
                 close(client_sockfd);
                 break;
             }
-
-            // if client types 'quit'
-            if (strncmp(buf_in, "quit",4) == 0)
-            {
-                strncpy(buf_out, "200 bye",255);
-                printf("Client is disconnected.\n");
-                write(client_sockfd, buf_out, 255);
-
-                close(client_sockfd);
-                exit(0);
+            // greeting checking
+            if (greeted ==0) {
+                if (strncmp(buf_in, "Hello This is ",13)==0) 
+                {
+                    greeted = 1;
+                    name = buf_in+14;
+                    sprintf(buf_out,"200 Welcome %s. What can I do for you?",name);
+                }
+                else  {  
+                    sprintf(buf_out,"400 I'm sorry. Greeting is required.");
+                }
             }
+            else {
+                tk = strtok(buf_in," ");
+            
+                while (tk != NULL && i < TRANS_SIZE) {
+                    to_upp(tk); //  Token must be upper-case.
+                    transaction[i] = tk;
+                    i++; // count how many parameters
+                    tk = strtok(NULL," ");
+                } 
 
-            strncpy(buf_out,"200 ok",6);
+                if (i < 3 && strncmp(transaction[0], "QUIT",4) != 0)
+                {
+                    sprintf(buf_out,"402 Too few Parameters");
+                }
+                else if(strncmp(transaction[0], "QUIT",4) == 0)
+                {
+                    // if client sends 'quit'
+                    sprintf(buf_out,"200 bye");    
+                    printf("Client is disconnected.\n");
+                    write(client_sockfd, buf_out, BUF_SIZE);
 
-            printf("%s\n",buf_in); // print client's input
-            write(client_sockfd, buf_out, 255);
-            //printf("Send End\n");
+                    close(client_sockfd);
+                    exit(0);
+                }
+                else 
+                {
+                    lv = strtol(transaction[1],&lptr,10);
+                    rv = strtol(transaction[2],&rptr,10);
+                    order = transaction[0];
+
+                    if (*lptr != 0  || *rptr!= 0 ) {
+                        // When first character of left or right parameter
+                        // is 0 then they are not integers. 
+                        sprintf(buf_out,"403 Parameter error");
+                    }
+                    else if ((lv == LONG_MAX || lv  == LONG_MIN) || 
+                        (rv == LONG_MIN || rv== LONG_MAX)) {
+                        sprintf(buf_out,"500 Server overflow");
+                    }
+                    else 
+                    {
+                        // All parameters are good, then do Transaction.
+                        if (strncmp(order,"ADD",3)==0) 
+                            sprintf(buf_out,"200 Result %ld", lv + rv);
+                        else if (strncmp(order,"MULT",3)==0) 
+                            sprintf(buf_out,"200 Result %ld",lv * rv);
+                        else if (strncmp(order,"SUB",3)==0) 
+                            sprintf(buf_out,"200 Result %ld",lv - rv);
+                        else if (strncmp(order,"DIV",3)==0)
+                        {
+                            if (rv==0)
+                                sprintf(buf_out,"403 Parameter error: you divided by zero!");
+                            else
+                                sprintf(buf_out,"200 Result %ld",lv / rv);
+                        }
+                        else
+                            sprintf(buf_out,"401 Unknown command");
+                    }   
+                }    
+            }
+            write(client_sockfd, buf_out, BUF_SIZE); 
+            
         }
     }
     close(client_sockfd);
+}
+
+void to_upp(char* stra)
+{
+    while(*stra) {
+        *stra = toupper(*stra);
+        stra++;
+    }
 }

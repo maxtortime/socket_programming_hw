@@ -1,6 +1,0 @@
-zipcode zipcode_cli	: zipcode.c zipcode_cli.c
-	gcc zipcode.c -o zipcode
-	gcc zipcode_cli.c -o zipcode_cli
-
-
-
