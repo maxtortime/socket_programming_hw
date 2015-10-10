@@ -37,8 +37,8 @@ int main(int argc, char **argv)
 
     if (argc != 2)
     {
-        printf("Usage : ./add_server [port]\n");
-        printf("Example  : ./add_server 8080\n");
+        printf("Usage : ./server [port]\n");
+        printf("Example  : ./server 8080\n");
         exit(0);
     }
   
@@ -72,6 +72,7 @@ int main(int argc, char **argv)
     }
     // Server 
     printf("Now, We are just listening %s ports (Ctrl+c will stop server)...\n",argv[1]);
+    printf("author: 201122037 Taehwan Kim\n");
 
     while(1)
     {
@@ -101,7 +102,7 @@ int main(int argc, char **argv)
                 {
                     greeted = 1;
                     name = buf_in+14;
-                    sprintf(buf_out,"200 Welcome %s. What can I do for you?",name);
+                    sprintf(buf_out,"200 Welcome %s. What can I do for you?\n 1) add  2) sub 3) mult 4) div ex) add 100 200",name);
                 }
                 else  {  
                     sprintf(buf_out,"400 I'm sorry. Greeting is required.");

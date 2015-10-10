@@ -19,20 +19,21 @@ int main(int argc, char **argv)
     char buf_get[BUF_SIZE];
     char name[NAME_SIZE];
     char greeting[GREETING_SIZE];
+    char* automatic;
 
     struct sockaddr_in clientaddr;
 
-    if (argc != 2)
+    if (argc != 3)
     {
-        printf("Usage : ./add_client [port]\n");
-        printf("Example    : ./add_client 4444\n");
+        printf("Usage : ./client {{ip}} {{port}}\n");
+        printf("Example    : ./client 127.0.0.1 4444\n");
         exit(0);
     }
 
     client_sockfd = socket(AF_INET, SOCK_STREAM, 0);
     clientaddr.sin_family = AF_INET;
-    clientaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    clientaddr.sin_port = htons(atoi(argv[1]));
+    clientaddr.sin_addr.s_addr = inet_addr(argv[1]);
+    clientaddr.sin_port = htons(atoi(argv[2]));
 
     client_len = sizeof(clientaddr);
 
@@ -43,6 +44,9 @@ int main(int argc, char **argv)
     }
     
      // Greeting
+
+     printf("Welcome to socket calculation client program.\n");
+     printf("author: 201122037 Taehwan Kim\n");
      printf("Please input your name. (length:~20)> ");
      fgets(name, NAME_SIZE, stdin);
 
@@ -50,12 +54,13 @@ int main(int argc, char **argv)
      if ((strlen(name)>0) && (name[strlen (name) - 1] == '\n'))
         name[strlen (name) - 1] = '\0';
 
-     //sprintf(greeting,"Hello This is %s",name);
-
-     //write(client_sockfd, greeting, GREETING_SIZE);
-     //read(client_sockfd, buf_get, BUF_SIZE);
-     //printf("%s\n", buf_get);
-    
+    printf("Thanks. Connection with server is successful.\n");
+    printf("But you must greet with server.\n");
+    printf("If you want to greet with server.\n");
+    printf("then you should type to your shell like this...\n");
+    printf("Usage : name> Hello This is {{name}}\n");
+    printf("Example : Tom> Hello This is {{Tom}}\n");
+    printf("If you type 'quit', can disconnet with server and quit this program.\n");
 
     while(1)
     {
