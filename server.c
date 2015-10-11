@@ -102,6 +102,7 @@ int main(int argc, char **argv)
                 {
                     greeted = 1;
                     name = buf_in+14;
+                    printf("%s\n",buf_in);
                     sprintf(buf_out,"200 Welcome %s. What can I do for you?\n 1) add  2) sub 3) mult 4) div ex) add 100 200",name);
                 }
                 else  {  
@@ -109,6 +110,7 @@ int main(int argc, char **argv)
                 }
             }
             else {
+                printf("%s\n",buf_in);
                 tk = strtok(buf_in," ");
             
                 while (tk != NULL && i < TRANS_SIZE) {
@@ -116,7 +118,7 @@ int main(int argc, char **argv)
                     transaction[i] = tk;
                     i++; // count how many parameters
                     tk = strtok(NULL," ");
-                } 
+                }
 
                 if (i < 3 && strncmp(transaction[0], "QUIT",4) != 0)
                 {
