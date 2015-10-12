@@ -170,7 +170,7 @@ server-> 200 Result 26129
 ```
 ### 계산 명령 시 발생하는 각종 오류 정리
 
-오류가 발생하더라도 Server나 Client는 종료되지 않고 지속적으로 메시지를 보내고 명령을 수행할 수 있다. 
+오류가 발생하더라도 Server나 Client는 종료되지 않고 지속적으로 메시지를 보내고 명령을 수행할 수 있다. Paramter가 2개를 초과하면 오류는 아니고 자연스럽게 앞 두 매개변수로만 계산하게 되어 있다.
 
 #### 401 Unknown command 
 Server가 수행할 수 없는 명령을 입력한 경우이다.
@@ -220,7 +220,8 @@ server-> 500 Server overflow
 
 Client가 quit를 입력하면 프로그램이 종료된다. 이 경우 Greeting을 완료한 상태라면 Server 프로그램도 같이 종료하지만, Greeting이 되지 않았다면 Server는 계속 켜져있다.
 
-예를 들어, 한창 잘 작동하고 있는 경우이다. \* Client
+예를 들어, 한창 잘 작동하고 있는 경우이다. 
+* Client
 ```sh
 tkim> add 9999999999999999999 999999999999999999999
 server-> 500 Server overflow
@@ -244,3 +245,202 @@ tkim> quit
 $
 ```
 이렇게 서버에 영향을 미치지 못하고, client 프로그램만 종료되는 것을 볼 수 있다.
+> Greeting 은 필수!
+
+## 프로그램 구조 분석
+이번엔 server와 client의 소스코드의 구조를 분석해보면서 어떤 식으로 돌아가는 프로그램인지 알아보고자 한다. 부분 부분 이 보고서에 소스를 첨부하면서 설명하도록 하겠다.
+### Server
+서버 프로그램은 크게
+1. 소켓 생성 및 주소 설정
+2. 변수 초기화 및 Greeting check
+3. client의 명령 parsing
+4. 계산 후 client에게 결과 보내기
+
+로 이루어져 있다고 볼 수 있다.
+#### 소켓 생성 및 주소 설정
+```c
+	// INET 기반의 소켓 생성 
+    if ((server_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        perror("socket error : ");
+        exit(0);
+    }
+
+    memset(&serveraddr,0,sizeof(serveraddr)); // 서버 주소 초기화
+    serveraddr.sin_family = AF_INET; // ipv4 사용
+    // 주소를 알맞게 변환함.
+    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    serveraddr.sin_port = htons(atoi(argv[1])); 
+
+    state = bind(server_sockfd , (struct sockaddr *)&serveraddr,
+            sizeof(serveraddr)); // socket에 ip 주소와 port 지정
+```
+소켓을 생성하고 서버 주소 초기화 및 port 번호 지정을 한다.
+#### Greeting check
+```c
+if (greeted ==0) {
+    if (strncmp(buf_in, "Hello This is ",13)==0) 
+    {
+        greeted = 1;
+        name = buf_in+14;
+        printf("%s\n",buf_in);
+        sprintf(buf_out,"200 Welcome %s. What can I do for you?\n 1) add  2) sub 3) mult 4) div ex) add 100 200",name);
+    }
+    else  {  
+        sprintf(buf_out,"400 I'm sorry. Greeting is required.");
+    }
+}
+```
+buf_in과 Hello This is 문자열을 비교해서 같으면 greeting을 완료했다 판단하고 client에게 메시지를 보내주고, greeted 가 0이면서 메시지도 틀렸으면 에러메시지를 보내준다.
+
+#### Client 명령 Parsing
+```c
+tk = strtok(buf_in," ");
+            
+while (tk != NULL && i < TRANS_SIZE) {
+    to_upp(tk); //  Token must be upper-case.
+    transaction[i] = tk;
+    i++; // count how many parameters
+    tk = strtok(NULL," ");
+}
+```
+strtok() 를 사용해서 client가 보낸 문자열을 공백 단위로 토큰으로 만들었다. 그리고 i라는 변수는 parameter가 몇 개인지 가지고 있게 된다. to_upp()은 직접 만든 문자열을 알파벳 대문자로 전부 바꿔주는 함수이다.
+```c
+void to_upp(char* stra)
+{
+    while(*stra) {
+        *stra = toupper(*stra);
+        stra++;
+    }
+}
+```
+다음 위의 transcation array의 0번째와 1번쨰 element만 가지고 계산을 수행하게 된다.
+```c
+lv = strtol(transaction[1],&lptr,10);
+rv = strtol(transaction[2],&rptr,10);
+order = transaction[0];
+
+if (*lptr != 0  || *rptr!= 0 ) {
+    // When first character of left or right parameter
+    // is 0 then they are not integers. 
+    sprintf(buf_out,"403 Parameter error");
+}
+else if ((lv == LONG_MAX || lv  == LONG_MIN) || 
+    (rv == LONG_MIN || rv== LONG_MAX)) {
+    sprintf(buf_out,"500 Server overflow");
+}
+else 
+{
+    // All parameters are good, then do Transaction.
+    if (strncmp(order,"ADD",3)==0) 
+        sprintf(buf_out,"200 Result %ld", lv + rv);
+    else if (strncmp(order,"MULT",3)==0) 
+        sprintf(buf_out,"200 Result %ld",lv * rv);
+    else if (strncmp(order,"SUB",3)==0) 
+        sprintf(buf_out,"200 Result %ld",lv - rv);
+    else if (strncmp(order,"DIV",3)==0)
+    {
+        if (rv==0)
+            sprintf(buf_out,"403 Parameter error: you divided by zero!");
+        else
+            sprintf(buf_out,"200 Result %ld",lv / rv);
+    }
+    else
+        sprintf(buf_out,"401 Unknown command");
+}   
+```
+strtol()을 사용하여 아주 쉽게 문자열로 된 숫자를 적절히 변환할 수 있었다. atoi를 쓰려고 했는데 strtol은 숫자가 아닌 부분을 다시 포인터로 넘겨주기도 하고, 덕분에 포인터의 반환값을 보고 그 문자열의 상태를 알 수 있었다.
+
+생각해보면 위의 lptr과 rptr을 간접 참조한 값은 char 값인데 만약 그게 0이 아니라면 그게 문자(ascii 코드값)라는 말이다. 그러므로 0이면 숫자이고 0이 아니면 아스키 코드이므로 해당 문자열이 문자인지 숫자인지 파악할 수 있었다. 다음 else if 문은 단순히 lv 와 rv 값이 long의 범위를 넘어서지 않았나 확인하는 것이다. strtol()은 overflow가 일어나면 그냥 LONG_MAX나 LONG_MIN을 가지게 되므로 저렇게 비교해도 괜찮다고 man page에 적혀 있었다.
+
+> long int strtol(const char *nptr, char **endptr, int base);
+
+```c
+/* Check for various possible errors */
+if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
+       || (errno != 0 && val == 0)) {
+   perror("strtol");
+   exit(EXIT_FAILURE);
+}
+```
+
+다음은 단순히 order와 "ADD", "SUB" 등의 문자열을 비교해서 각각의 사칙연산을 수행하고, sprintf()를 이용해 buf_out에 해당 값을 적게 된다. 그리고 맨 마지막에 cleint에게 메시지를 보내는 건 한 번만 수행하고, (맨 위에 메시지를 보내는 건 모두 sprintf()를 사용함)
+```c
+write(client_sockfd, buf_out, BUF_SIZE);
+```
+메시지를 보낸 후에는 다시 루프를 돌아서 지금까지의 과정을 다시 수행하여 client와 연속적으로 통신하게 되는 것이다.
+
+### Client
+Client 프로그램은
+1. 소켓 생성 및 주소 설정
+2. 변수 초기화 및 user에게 메시지 입력 받음
+3. Server에게 메시지를 보내고, Server의 응답을 다시 console에 출력함
+의 구조로 이루어져 있다.
+
+#### 소켓 생성 및 주소 설정
+```c
+client_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+clientaddr.sin_family = AF_INET;
+clientaddr.sin_addr.s_addr = inet_addr(argv[1]);
+clientaddr.sin_port = htons(atoi(argv[2]));
+
+client_len = sizeof(clientaddr);
+```
+Server와 크게 다를 건 없지만, 아까 Server는 모든 ip에 대한 접속을 유지해야 하므로 INADDR_ANY를 썼지만, Client는 Server하고만 통신하면 되므로 사용자가 입력하는 서버 주소값을 사용했다는 걸 알 수 있다.
+
+#### User에게 메시지를 입력 받고 Server로 보내
+```
+// Greeting
+
+ printf("Welcome to socket calculation client program.\n");
+ printf("author: 201122037 Taehwan Kim\n");
+ printf("Please input your name. (length:~20)> ");
+ fgets(name, NAME_SIZE, stdin);
+
+ /* Remove trailing newline, . */
+ if ((strlen(name)>0) && (name[strlen (name) - 1] == '\n'))
+    name[strlen (name) - 1] = '\0';
+
+printf("Thanks. Connection with server is successful.\n");
+printf("But you must greet with server.\n");
+printf("If you want to greet with server.\n");
+printf("then you should type to your shell like this...\n");
+printf("Usage : name> Hello This is {{name}}\n");
+printf("Example : Tom> Hello This is {{Tom}}\n");
+printf("If you type 'quit', can disconnet with server and quit this program.\n");
+
+while(1)
+{
+    memset(buf_get, '\0', BUF_SIZE);
+    memset(buf_in, '\0', BUF_SIZE);
+
+    printf("%s> ",name);
+    fgets(buf_in, BUF_SIZE, stdin);
+
+    /* Remove trailing newline, if there. */
+    if ((strlen(buf_in)>0) && (buf_in[strlen (buf_in) - 1] == '\n'))
+        buf_in[strlen (buf_in) - 1] = '\0';
+
+    write(client_sockfd, buf_in, BUF_SIZE);
+    read(client_sockfd, buf_get, BUF_SIZE);
+
+    // When client inputs quit.
+    if (strncmp(buf_in, "quit", 4) == 0)
+    {
+        printf("%s\n", buf_get);
+        close(client_sockfd);
+        exit(0);
+    }
+   
+    printf("server-> %s\n", buf_get);
+}
+```
+User에게 지시를 하고 user의 이름을 받아서 shell에 표시해주고 계속 입력을 받고 메시지를 Server로 보내고 받는 부분이다. fgets로 입력 받았을 때 자꾸 \n이 삽입되어서 제거하는 코드를 삽입하였다.
+
+### socket 닫기
+> close(client_sockfd);
+
+Server나 Client 모두 마지막에 사용한 소켓을 닫아주지 않으면 곤란한 경우가 생길 것이다. 계속 테스트하면서도 bind error나 accept error가 자주 발생하여 어떤 원인인지 몰랐다가 프로그램을 강제 종료해서 socket이 제대로 닫히지 않아서 그렇다는 걸 깨달았다. 이후 프로그램이 발전하면서 종료할 때 소켓을 닫도록 해주어서 Accept error는 더 이상 나지 않았다.
+
+
+

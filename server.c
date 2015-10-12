@@ -44,19 +44,21 @@ int main(int argc, char **argv)
   
     state = 0;
 
-    // internet 기반의 소켓 생성 (INET)
+    // INET 기반의 소켓 생성
     if ((server_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         perror("socket error : ");
         exit(0);
     }
-    memset(&serveraddr,0,sizeof(serveraddr));
-    serveraddr.sin_family = AF_INET; // AF_INET is ipv4.
-    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serveraddr.sin_port = htons(atoi(argv[1]));
+
+    memset(&serveraddr,0,sizeof(serveraddr)); // 서버 주소 초기화
+    serveraddr.sin_family = AF_INET; // ipv4 사용
+    // 주소를 알맞게 변환함.
+    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    serveraddr.sin_port = htons(atoi(argv[1])); 
 
     state = bind(server_sockfd , (struct sockaddr *)&serveraddr,
-            sizeof(serveraddr));
+            sizeof(serveraddr)); // socket에 ip 주소와 port 지정
 
     if (state == -1)
     {
@@ -64,20 +66,20 @@ int main(int argc, char **argv)
         exit(0);
     }
 
-    state = listen(server_sockfd, 5);
+    state = listen(server_sockfd, 5); // socket의 연결을 확인
     if (state == -1)
     {
         perror("listen error : ");
         exit(0);
     }
-    // Server 
-    printf("Now, We are just listening %s ports (Ctrl+c will stop server)...\n",argv[1]);
+    // Server 프로그램 메시지 출력
+    printf("Now, We are just listening %s ports (Ctrl+c will stop server)...\n", argv[1]);
     printf("author: 201122037 Taehwan Kim\n");
 
     while(1)
     {
         client_sockfd = accept(server_sockfd, (struct sockaddr *)&clientaddr,
-                               &client_len);
+                               &client_len); // socket의 연결을 승인함.
 
         if (client_sockfd == -1)
         {
@@ -87,6 +89,7 @@ int main(int argc, char **argv)
 
         while(1)
         {
+            // 메시지 버퍼 초기화 
             i = 0;
             memset(buf_in, '\0', BUF_SIZE);
             memset(buf_out, '\0', BUF_SIZE);
@@ -122,6 +125,8 @@ int main(int argc, char **argv)
 
                 if (i < 3 && strncmp(transaction[0], "QUIT",4) != 0)
                 {
+                    // parameter가 2개 미만인 경우
+                    // 하지만 quit를 입력한 경우 정상적으로 종료되어야 한다.
                     sprintf(buf_out,"402 Too few Parameters");
                 }
                 else if(strncmp(transaction[0], "QUIT",4) == 0)
