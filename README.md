@@ -389,7 +389,7 @@ client_len = sizeof(clientaddr);
 Server와 크게 다를 건 없지만, 아까 Server는 모든 ip에 대한 접속을 유지해야 하므로 INADDR_ANY를 썼지만, Client는 Server하고만 통신하면 되므로 사용자가 입력하는 서버 주소값을 사용했다는 걸 알 수 있다.
 
 #### User에게 메시지를 입력 받고 Server로 보내
-```
+```c
 // Greeting
 
  printf("Welcome to socket calculation client program.\n");
