@@ -50,7 +50,8 @@ int main(int argc, char **argv)
         perror("socket error : ");
         exit(0);
     }
-    bzero(&serveraddr, sizeof(serveraddr));
+   // bzero(&serveraddr, sizeof(serveraddr));
+    memset(&serveraddr,0,sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
     serveraddr.sin_port = htons(atoi(argv[1]));
