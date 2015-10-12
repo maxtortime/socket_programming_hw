@@ -70,7 +70,9 @@ Server를 올바로 실행하고, Client도 서버에 접속하였다면, 서로
 
 > Hello This is {{name}}
 
-{{name}}앞의 'Hello This is '는 대소문자가 구분되며 또한 각 어절 사이는 띄어쓰기 한 칸으로 되어있어야 한다. 즉, {{name}} 전 글자의 갯수가 정확히 **14개**여야 한다는 것이다.
+{{name}}앞의 'Hello This is '는 대소문자가 구분되며 또한 각 어절 사이는 띄어쓰기 한 칸으로 되어있어야 한다.
+
+> 즉, {{name}} 전 글자의 갯수가 정확히 **14개**여야 한다는 것이다.
 
 Client 프로그램을 실행시키고 위에서처럼 이름을 입력했다면, 프로그램에서 Greeting 메시지를 어떻게 보내야 하는 지 알려준다.
 ```sh
@@ -83,7 +85,10 @@ Example : Tom> Hello This is {{Tom}}
 If you type 'quit', can disconnet with server and quit this program.
 tkim>
 ```
-맨 아래 방금 적은 이름이 보이는 shell에 프로그램의 지시대로 Greeting 메시지를 입력하면 된다. shell의 &gt;와 사용자가 입력하는 첫 글자는 한 칸의 공백이 있으므로 주의해야 한다. 또한 'quit'라고 치면 Server와의 연결이 끊어지고, 프로그램이 종료된다. 단, Greeting을 하지 않으면, Server는 Client와 연결됬다고 생각하지 않아서 꺼지지 않는다. 이건 나중에 자세히 설명하도록 한다. 물론 이 상테에서도 서버로 메시지를 보내는 것은 가능하다. 하지만, 아직 Greeting을 하지 않았으므로, Server는 오류를 Client에게 전송하게 된다.
+맨 아래 방금 적은 이름이 보이는 shell에 프로그램의 지시대로 Greeting 메시지를 입력하면 된다. 
+> shell의 > 와 사용자가 입력하는 첫 글자는 한 칸의 공백이 있으므로 주의해야 한다. 
+
+또한 'quit'라고 치면 Server와의 연결이 끊어지고, 프로그램이 종료된다. 단, Greeting을 하지 않으면, Server는 Client와 연결됬다고 생각하지 않아서 꺼지지 않는다. 이건 나중에 자세히 설명하도록 한다. 물론 이 상테에서도 서버로 메시지를 보내는 것은 가능하다. 하지만, 아직 Greeting을 하지 않았으므로, Server는 오류를 Client에게 전송하게 된다.
 
 예를 들어,
 ```sh
@@ -95,7 +100,7 @@ tkim> hi?
 server-> 400 I'm sorry. Greeting is required.
 ```
 위의 Greeting 형식을 맞추지 않은 메시지에 대해서 Server가 전부 오류 메시지를 보내는 것을 확인할 수 있다. 즉, Greeting을 하지 않으면 정상적인 프로그램 이용이 불가능하다는 걸 알 수 있다. 이제 제대로 된 Greeting 메시지를 보내보자.
-```
+```sh
 tkim> Hello This is tkim
 server-> 200 Welcome tkim. What can I do for you?
  1) add  2) sub 3) mult 4) div ex) add 100 200
@@ -109,7 +114,9 @@ Hello This is tkim
 ```
 ### 계산 명령 수행
 
-과제에서 제시한 명령을 모두 Server가 수행할 수 있다. 명령은 대소문자 구별을 하지 않는다. 또한 매개변수로 문자를 보내면 Server가 에러 메시지를 보내준다. 매개변수는 둘다 long integer이고, 범위는 limits.h 에 정의된 LONG\_MIN~LONG\_MAX 값이다. 명령을 보내는 형식은 다음과 같다. &gt;{{operation}} {{long integer}} {{long integer}}
+과제에서 제시한 명령을 모두 Server가 수행할 수 있다. 명령은 대소문자 구별을 하지 않는다. 또한 매개변수로 문자를 보내면 Server가 에러 메시지를 보내준다. 매개변수는 둘다 long integer이고, 범위는 limits.h 에 정의된 LONG\_MIN~LONG\_MAX 값이다. 명령을 보내는 형식은 다음과 같다. 
+
+> {{operation}} {{long integer}} {{long integer}}
 
 > (테스트 환경에서 man limits.h 확인 결과 LONG\_MIN = -2,147,483,647, LONG\_MAX = +2,147,483,647)
 
@@ -138,7 +145,7 @@ tkim> sub 0 -3
 server-> 200 Result 3
 ```
 #### MULT {{long integer}} {{long integer}}
-```
+```sh
 tkim> mult 200 300
 server-> 200 Result 60000
 tkim> mult 123456789 123456789
@@ -149,7 +156,7 @@ tkim> MULT -522324 5599
 server-> 200 Result -2924492076
 ```
 #### DIV {{long integer}} {{long integer}}
-```
+```sh
 tkim> div 2384 235
 server-> 200 Result 10
 tkim> DIV 523 13
@@ -163,12 +170,15 @@ server-> 200 Result 26129
 ```
 ### 계산 명령 시 발생하는 각종 오류 정리
 
-오류가 발생하더라도 Server나 Client는 종료되지 않고 지속적으로 메시지를 보내고 명령을 수행할 수 있다. \#\#\#\# 401 Unknown command Server가 수행할 수 없는 명령을 입력한 경우이다.
+오류가 발생하더라도 Server나 Client는 종료되지 않고 지속적으로 메시지를 보내고 명령을 수행할 수 있다. 
+
+#### 401 Unknown command 
+Server가 수행할 수 없는 명령을 입력한 경우이다.
 ```sh
-    tkim> abc 100 200
-    server-> 401 Unknown command
-    tkim> dia 200 200
-    server-> 401 Unknown command
+tkim> abc 100 200
+server-> 401 Unknown command
+tkim> dia 200 200
+server-> 401 Unknown command
 ```
 #### 402 Too few Parameters
 
