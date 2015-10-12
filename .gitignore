@@ -1,3 +1,5 @@
+*.*~
+*.*.swp
 # Object files
 *.o
 *.ko
@@ -30,3 +32,4 @@
 
 # Debug files
 *.dSYM/
+>>>>>>> 3f1cad3332b15d4f27639f1d29daf5be34d43b03
