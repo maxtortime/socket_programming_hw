@@ -24,7 +24,7 @@ Server와 Client가 서로 1:1로 연결되어, (2개 이상의 Client가 Server
 $ ls
 client.c makefile README.md server.c
 ```
-* 이때 쉘에 다음과 같이 입력한다.
+* 이때 shell에 다음과 같이 입력한다.
 ```sh
 $ make
 $ ls
